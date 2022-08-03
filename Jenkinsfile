@@ -70,11 +70,11 @@ pipeline {
                     }catch (error) {
                     }         
                     command("""
-                        data=$(python analytical_report.py reports/_stats.csv 10 30)
-                        if [ $data == "pass" ]
+                        data=\$(python analytical_report.py reports/_stats.csv 10 30)
+                        if [ \$data == "pass" ]
                         then
                             echo "OK"
-                        elif [ $data == "fail" ]
+                        elif [ \$data == "fail" ]
                         then
                             echo "Failure"
                         else
