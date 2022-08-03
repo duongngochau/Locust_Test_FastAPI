@@ -47,14 +47,14 @@ pipeline {
             steps {
                 checkout_source()
                 make_virtualenv()
-                command("pip install -r requirements.txt")
+                run_command("pip install -r requirements.txt")
             }
         }
         stage("Build") {
             steps{
                 script {
                     try{
-                        command("""
+                        run_command("""
                             locust --host=http://127.0.0.1:8000 \
                             --run-time=30s \
                             --autostart \
@@ -69,7 +69,7 @@ pipeline {
                         """)
                     }catch (error) {
                     }         
-                    command("""
+                    run_command("""
                         data=\$(python analytical_report.py reports/_stats.csv 10 30)
                         if [ \$data == "pass" ]
                         then
