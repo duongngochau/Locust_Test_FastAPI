@@ -35,4 +35,4 @@ if __name__ == '__main__':
     path = sys.argv[1]
     warning_threshold = sys.argv[2] #20
     failure_threshold = sys.argv[3] #30
-    get_failed_percent(path, warning_threshold, failure_threshold)
+    print(get_failed_percent(path, warning_threshold, failure_threshold))
