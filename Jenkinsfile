@@ -7,83 +7,64 @@ def checkout_source(){
         extensions: [], 
         userRemoteConfigs: [[
             credentialsId: '3373b64f-27bb-440a-88f2-843c02843a99', 
-            url: 'https://github.com/duongngochau/Locust_Test_FastAPI.git'
+            url: 'https://github.com/duongngochau/app_template.git'
         ]]])
 }
 
 def make_virtualenv(python_version='python3.9'){
-    sh 'which ${python_version}'
-    sh 'which $python_version'
-    sh '''
+    sh "which ${python_version}"
+    sh "which $python_version"
+    sh """
         py=\$(which ${python_version})
         \$py -m pip install --upgrade virtualenv
-        \$py -m venv venv
-    '''
+        \$py -m venv .venv
+    """
 }
 
 def run_command(command){
-    sh '''
-    . venv/bin/activate
+    sh """
+    . .venv/bin/activate
     $command
-    '''
+    """
 }
 
-def run_command_and_return_output(command){
-    result = sh (
-        script: '''
-            . venv/bin/activate
-            $command
-        ''',
-        returnStatus: true
-    )
-    return result
+def remove_virtualenv(){
+    sh """
+        rm -rf .venv
+    """
 }
 
 pipeline {
+    
     agent any
-
-    stages {
-        stage('Checkout source and install libs') {
+    
+    stages{
+        stage('Checkout Source & install libs') {
             steps {
+                echo "Check out source code"
                 checkout_source()
-                make_virtualenv()
-                command('pip install -r requirements.txt')
+                echo "Install libs"
+                make_virtualenv("python3.9")
+                run_command("pip install -r requirements.txt")
             }
         }
         stage('Build') {
-            steps{
-                script {
-                    try{
-                        command('''
-                            locust --host=http://127.0.0.1:8000 \
-                            --run-time=30s \
-                            --autostart \
-                            --autoquit 5 \
-                            --users=2500 \
-                            --spawn-rate=1000 \
-                            --html=reports/report.html \
-                            --loglevel=DEBUG \
-                            --logfile=reports/log \
-                            --csv=reports/ \
-                            --web-port=8099
-                        ''')
-                    }catch (error) {
-                    }         
-                    command('''
-                        data=$(python analytical_report.py reports/_stats.csv 10 30)
-                        if [ $data == "pass" ]
-                        then
-                            echo "OK"
-                        elif [ $data == "fail" ]
-                        then
-                            echo "Failure"
-                        else
-                            echo "warnings"
-                        fi
-                    ''')
-                }
+            steps {
+                run_command("""
+                    python run_app.py 
+                """)
             }
         }
     }
-
+    post{
+        always{
+            remove_virtualenv()
+        }
+        success{
+            echo "Success"
+        }
+        failure{
+            echo "Failure"
+        }
+    }
 }
