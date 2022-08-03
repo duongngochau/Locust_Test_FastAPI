@@ -17,7 +17,7 @@ def get_request_count(path='reports/_stats.csv'):
             if each_row["Name"] == "Aggregated":
                 return each_row["Request Count"]
 
-def get_failed_percent(path):
+def get_failed_percent(path, warning_threshold, failure_threshold):
     requests = get_request_count(path)
     failure = get_failure_count(path)
 
@@ -35,4 +35,4 @@ if __name__ == '__main__':
     path = sys.argv[1]
     warning_threshold = sys.argv[2] #20
     failure_threshold = sys.argv[3] #30
-    get_failed_percent(path)
+    get_failed_percent(path, warning_threshold, failure_threshold)
