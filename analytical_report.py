@@ -26,9 +26,9 @@ if __name__ == '__main__':
 
     failed_percent = float(failure) / float(requests) * float(100)
 
-    if failed_percent >= float(failure_threshold):
+    if failed_percent >= float(warning_threshold):
         status = "fail"
-    elif failed_percent >= float(warning_threshold):
+    elif failed_percent >= float(failure_threshold):
         status = "warning"
     else:
         status = "pass"
