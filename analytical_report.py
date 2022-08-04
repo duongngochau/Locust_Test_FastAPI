@@ -40,14 +40,14 @@ def get_failed_percent(path, warning_threshold, failure_threshold):
             f"Current failed ({failed_percent}%) "
             + ">= " 
             + f"Failure Threshold ({failure_threshold}%)")
-        logger.error("Unstable")
+        logger.error("Failure")
         status = "fail"
     elif failed_percent >= float(warning_threshold):  
         logger.warning(
             f"Current failed ({failed_percent}%) "
             + ">= " 
             + f"Warnings Threshold ({warning_threshold}%)")
-        logger.warning("warnings")
+        logger.warning("Unstable")
         status = "warnings"
     else:
         status = "pass"
