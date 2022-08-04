@@ -30,6 +30,7 @@ def get_failed_percent(path, warning_threshold, failure_threshold):
     failure = get_failure_count(path)
     if float(requests) == float(0):
         status = "fail"
+        logger.error("OsError while running locust")
     else:
         failed_percent = round(float(failure) / float(requests) * float(100), 2)
 

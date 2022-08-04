@@ -34,10 +34,53 @@ def run_command_and_return_output(command){
             . venv/bin/activate
             $command
         """,
-        returnStatus: true
+        returnStdout: true
     )
     return result
 }
+
+// def set_status(status){
+//     script: {
+//         if [ $status == 'fail' ]
+//         then
+//             echo "status: fail"
+//             currentBuild.result = 'FAILURE'
+//         fi
+//         if [ $status == 'pass' ]
+//         then
+//             echo "status: pass"
+//             currentBuild.result = 'SUCEESS'
+//         fi
+//         if [ $status == 'warnings' ]
+//         then
+//             currentBuild.result = 'WARNINGS'
+//         fi
+//     }
+
+// }
+
+// def run_command_and_return_output(command){
+//     result = sh (
+//         script: "ls",
+//         returnStdout: true
+//     )
+//     return result
+// }
+
+def check_failure(){
+    sh """
+    export status=\$(cat report_result.txt)
+    if [ "\$status" = "fail" ]; then exit 1; fi
+    """
+}
+
+def check_unstable(){
+    sh """
+    export status=\$(cat report_result.txt)
+    if [ "\$status" = "warnings" ]; then exit 1; fi
+    """
+}
+
 
 pipeline {
     agent any
@@ -46,21 +89,22 @@ pipeline {
         stage("Checkout source and install libs") {
             steps {
                 checkout_source()
-                make_virtualenv()
-                run_command("pip install -r requirements.txt")
+                sh "rm -rf reports && mkdir reports"
+                // make_virtualenv()
+                // run_command("pip install -r requirements.txt")
             }
         }
-        stage("Build") {
+        stage("Run Test") {
             steps{
                 script {
                     try{
                         run_command("""
                             locust --host=http://127.0.0.1:8000 \
-                            --run-time=30s \
+                            --run-time=$RUN_TIME \
                             --autostart \
                             --autoquit 5 \
-                            --users=2500 \
-                            --spawn-rate=1000 \
+                            --users=$USERS \
+                            --spawn-rate=$SPAWN_RATE \
                             --html=reports/report.html \
                             --loglevel=DEBUG \
                             --logfile=reports/log \
@@ -68,19 +112,34 @@ pipeline {
                             --web-port=8099
                         """)
                     }catch (error) {
-                    }         
-                    run_command("""
-                        data=\$(python analytical_report.py reports/_stats.csv 10 30)
-                        if [ \$data == "pass" ]
-                        then
-                            echo "OK"
-                        elif [ \$data == "fail" ]
-                        then
-                            echo "Failure"
-                        else
-                            echo "warnings"
-                        fi
+                    }
+                }
+            }
+        }
+        stage("Verify Report"){
+            steps{
+                script{
+                    echo "Verify report status"
+                    status = run_command_and_return_output("""
+                        python analytical_report.py reports/_stats.csv $WARNINGS_THRESHOLD $FAILURE_THRESHOLD
+                        
                     """)
+                    sh """
+                        echo "$status" > report_result.txt
+                    """
+                    try {
+                        check_failure()
+                    }catch(error){
+                        currentBuild.result = 'FAILURE'
+                        currentBuild.currentResult = 'FAILURE'
+                    }
+                    
+                    try{
+                        check_unstable()
+                    }catch(error){
+                        currentBuild.result = 'UNSTABLE'
+                        unstable("current build is unstable")
+                    }
                 }
             }
         }
